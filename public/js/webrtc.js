@@ -35,11 +35,21 @@ class WebRTCManager {
     }
 
     setupEventListeners() {
-        // Handle ICE candidates from socket
+        // Handle ICE candidates from socket - will be set up when socket is available
+        this.setupSocketListeners();
+    }
+
+    setupSocketListeners() {
+        // Check if socket is available and set up listeners
         if (window.socket) {
             window.socket.on('ice_candidate', (data) => {
                 this.handleIceCandidate(data);
             });
+        } else {
+            // Retry after a short delay if socket is not ready
+            setTimeout(() => {
+                this.setupSocketListeners();
+            }, 1000);
         }
     }
 

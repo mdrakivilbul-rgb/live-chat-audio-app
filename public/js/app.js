@@ -60,7 +60,14 @@ function setupEventListeners() {
         }
     });
 
-    messageInput.addEventListener('input', handleTyping);
+    messageInput.addEventListener('input', (e) => {
+        handleTyping();
+        
+        // Enable/disable send button based on input content and selected user
+        const hasContent = e.target.value.trim().length > 0;
+        sendBtn.disabled = !hasContent || !selectedUserId;
+    });
+    
     sendBtn.addEventListener('click', sendMessage);
 
     // File input
@@ -192,6 +199,11 @@ function connectSocket() {
     socket.on('connect', () => {
         console.log('Connected to server');
         showNotification('Connected to chat server', 'success');
+        
+        // Initialize WebRTC socket listeners after socket connection
+        if (window.webRTC) {
+            window.webRTC.setupSocketListeners();
+        }
     });
 
     socket.on('disconnect', () => {
@@ -320,8 +332,11 @@ async function selectUser(userId, username) {
 
     // Enable controls
     messageInput.disabled = false;
-    sendBtn.disabled = false;
     audioCallBtn.disabled = false;
+    
+    // Enable send button only if there's content in the input
+    const hasContent = messageInput.value.trim().length > 0;
+    sendBtn.disabled = !hasContent;
 
     // Load message history
     await loadMessageHistory(userId);
@@ -419,6 +434,9 @@ function sendMessage() {
     const message = messageInput.value.trim();
     if (!message || !selectedUserId) return;
 
+    // Disable send button temporarily to prevent double sending
+    sendBtn.disabled = true;
+
     socket.emit('private_message', {
         receiverId: selectedUserId,
         message: message,
@@ -427,6 +445,9 @@ function sendMessage() {
 
     messageInput.value = '';
     stopTyping();
+    
+    // Keep send button disabled since input is now empty
+    // It will be re-enabled when user types something new
 }
 
 // Handle typing
